@@ -21,7 +21,8 @@ fn get_log_stream(
         Ok(result) => {
             if let Some(log_streams) = result.log_streams {
                 if let Some(log_stream) = log_streams.first() {
-                    if log_stream.log_stream_name == Some(conf.log_stream_name.clone())
+                    if log_stream.log_stream_name
+                        == Some(conf.log_stream_name.clone())
                     {
                         return Some(log_stream.clone());
                     }
@@ -29,16 +30,11 @@ fn get_log_stream(
             }
             None
         }
-        Err(_) => {
-            None
-        }
+        Err(_) => None,
     }
 }
 
-fn create_log_stream(
-    client: &CloudWatchLogsClient,
-    conf: &Configuration,
-) {
+fn create_log_stream(client: &CloudWatchLogsClient, conf: &Configuration) {
     if let Err(err) = client
         .create_log_stream(CreateLogStreamRequest {
             log_group_name: conf.log_group_name.clone(),
@@ -98,7 +94,8 @@ impl CloudWatch {
     }
 
     pub fn upload(&mut self, conf: &Configuration, message: String) {
-        let result = self.client
+        let result = self
+            .client
             .put_log_events(PutLogEventsRequest {
                 log_events: vec![InputLogEvent {
                     message,

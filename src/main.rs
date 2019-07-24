@@ -2,18 +2,26 @@ mod cloudwatch;
 mod configuration;
 mod ec2;
 
-use configuration::Configuration;
 use cloudwatch::CloudWatch;
+use configuration::Configuration;
 use std::process::exit;
 use systemd::journal::{Journal, JournalFiles, JournalRecord};
 
-fn upload_record(conf: &Configuration, cloudwatch: &mut CloudWatch, record: &JournalRecord) {
+fn upload_record(
+    conf: &Configuration,
+    cloudwatch: &mut CloudWatch,
+    record: &JournalRecord,
+) {
     if let Some(message) = record.get("MESSAGE") {
         cloudwatch.upload(conf, message.to_string());
     }
 }
 
-fn run_main_loop(conf: &Configuration, cloudwatch: &mut CloudWatch, journal: &mut Journal) {
+fn run_main_loop(
+    conf: &Configuration,
+    cloudwatch: &mut CloudWatch,
+    journal: &mut Journal,
+) {
     let wait_time = None;
     loop {
         match journal.await_next_record(wait_time) {
@@ -26,14 +34,14 @@ fn run_main_loop(conf: &Configuration, cloudwatch: &mut CloudWatch, journal: &mu
 
 fn get_log_stream_name() -> String {
     match ec2::get_instance_id() {
-        Ok(id) => {
-            match ec2::get_instance_name(id) {
-                Ok(name) => { return name; }
-                Err(err) => {
-                    println!("get_instance_name failed: {:?}", err);
-                }
+        Ok(id) => match ec2::get_instance_name(id) {
+            Ok(name) => {
+                return name;
             }
-        }
+            Err(err) => {
+                println!("get_instance_name failed: {:?}", err);
+            }
+        },
         Err(err) => {
             println!("get_instance_id failed: {}", err);
         }
