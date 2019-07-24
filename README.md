@@ -11,16 +11,19 @@ service assumes it is running on an EC2 instance).
 
 ## Usage
 
-First, build the service:
+To build the service for EC2:
 
-    cargo build --release
+    tools/package.py
     
-The output is `target/release/journald-to-cloudwatch`. Copy that to an
+This builds in a Docker container that has the libraries an awslinux2
+EC2 instance would have.
+
+The output is `release/journald-to-cloudwatch.tar.gz`. Copy that to an
 EC2 instance. There is an example service configuration file in the
-repo, `journald-to-cloudwatch.service`. Copy that to the instance
-under `/etc/systemd/system/` and modify `LOG_GROUP_NAME` to the name
-of your log group. Note that the log group must exist for the service
-to work; it will not create the log group.
+tarball. Copy that to `/etc/systemd/system/` and modify
+`LOG_GROUP_NAME` to the name of your log group. Note that the log
+group must exist for the service to work; it will not create the log
+group.
 
 ## IAM policy
 

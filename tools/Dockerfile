@@ -1,10 +1,10 @@
-FROM ekidd/rust-musl-builder:stable
+FROM amazonlinux:2
 
-USER root
-RUN apt-get update && apt-get install -y libsystemd-dev
-USER rust
+RUN yum install -y gcc openssl-devel pkgconfig systemd-devel
 
-WORKDIR /home/rust/src
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+WORKDIR /build
 COPY Cargo.lock Cargo.toml ./
 COPY src/ ./src/
 COPY tools/ ./tools/

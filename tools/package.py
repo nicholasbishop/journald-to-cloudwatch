@@ -20,9 +20,10 @@ def main():
 
     run_cmd('sudo', 'docker', 'build', '-t', image_name, '-f', dockerfile, '.')
     run_cmd('sudo', 'docker', 'run',
-            '-v', 'jtc-cargo-git-volume:/home/rust/.cargo/git',
-            '-v', 'jtc-cargo-reg-volume:/home/rust/.cargo/registry',
-            '-v', 'jtc-cargo-tgt-volume:/home/rust/src/target',
+            '-e', 'CARGO_HOME=/cargo',
+            '-e', 'CARGO_TARGET_DIR=/cache',
+            '-v', 'jtc-cargo-volume:/cargo',
+            '-v', 'jtc-cache-volume:/cache',
             '-v', '{}:/host:z'.format(output_dir),
             image_name)
     run_cmd('sudo', 'chown', '{}:{}'.format(os.getuid(), os.getgid()),
