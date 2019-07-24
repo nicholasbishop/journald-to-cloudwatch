@@ -1,0 +1,13 @@
+[package]
+name = "journald-to-cloudwatch"
+version = "0.1.0"
+authors = ["Nicholas Bishop <nicholasbishop@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+chrono = "^0.4"
+reqwest = "^0.9"
+rusoto_core = "^0.40"
+rusoto_ec2 = "^0.40"
+rusoto_logs = "^0.40"
+systemd = "0.4.0"
