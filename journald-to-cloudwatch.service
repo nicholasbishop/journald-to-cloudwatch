@@ -1,0 +1,9 @@
+[Unit]
+Description=Copy logs from journald to CloudWatch
+
+[Service]
+ExecStart=/usr/bin/journald-to-cloudwatch
+Environment="LOG_GROUP_NAME=my-log-group-name"
+
+[Install]
+WantedBy=multi-user.target
