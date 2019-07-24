@@ -1,2 +1,4 @@
 /target
 **/*.rs.bk
+release/journald-to-cloudwatch
+release/journald-to-cloudwatch.tar.gz
