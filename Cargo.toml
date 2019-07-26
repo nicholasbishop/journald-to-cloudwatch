@@ -3,6 +3,9 @@ name = "journald-to-cloudwatch"
 version = "0.9.0"
 authors = ["Nicholas Bishop <nicholasbishop@gmail.com>"]
 edition = "2018"
+description = "Service that copies logs from journald to AWS CloudWatch Logs."
+license = "Apache-2.0"
+readme = "README.md"
 
 [dependencies]
 chrono = "^0.4"
