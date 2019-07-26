@@ -18,9 +18,9 @@ To build the service for EC2:
 This builds in a Docker container that has the libraries an awslinux2
 EC2 instance would have.
 
-The output is `release/journald-to-cloudwatch.tar.gz`. Copy that to an
-EC2 instance. There is an example service configuration file in the
-tarball. Copy that to `/etc/systemd/system/` and modify
+The output is `release/journald-to-cloudwatch-{version}.tar.gz`. Copy
+that to an EC2 instance. There is an example service configuration
+file in the tarball. Copy that to `/etc/systemd/system/` and modify
 `LOG_GROUP_NAME` to the name of your log group. Note that the log
 group must exist for the service to work; it will not create the log
 group.

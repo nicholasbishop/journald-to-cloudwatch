@@ -2,6 +2,13 @@
 
 import os
 import subprocess
+import sys
+
+try:
+    import toml
+except ModuleNotFoundError:
+    print('missing toml package; try "pip3 install --user toml"')
+    sys.exit(1)
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 REPO_DIR = os.path.join(SCRIPT_DIR, os.pardir)
@@ -11,12 +18,21 @@ def run_cmd(*cmd):
     subprocess.check_call(cmd)
 
 
+def read_version():
+    path = os.path.join(REPO_DIR, 'Cargo.toml')
+    with open(path) as rfile:
+        cargo = toml.load(rfile)
+        return cargo['package']['version']
+
+
 def main():
+    version = read_version()
     image_name = 'jtc-image'
     dockerfile = os.path.join(REPO_DIR, 'tools/Dockerfile')
     output_dir = os.path.join(REPO_DIR, "release")
     exe_path = os.path.join(output_dir, 'journald-to-cloudwatch')
-    tar_path = os.path.join(output_dir, 'journald-to-cloudwatch.tar.gz')
+    tar_path = os.path.join(
+        output_dir, 'journald-to-cloudwatch-{}.tar.gz'.format(version))
 
     run_cmd('sudo', 'docker', 'build', '-t', image_name, '-f', dockerfile, '.')
     run_cmd('sudo', 'docker', 'run',
