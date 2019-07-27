@@ -51,19 +51,16 @@ fn get_log_stream_name() -> String {
 
 fn main() {
     let conf = Configuration::new(get_log_stream_name());
-    if let Some(mut cloudwatch) = CloudWatch::new(&conf) {
-        let runtime_only = true;
-        let local_only = true;
-        match Journal::open(JournalFiles::All, runtime_only, local_only) {
-            Ok(mut journal) => {
-                run_main_loop(&conf, &mut cloudwatch, &mut journal);
-            }
-            Err(err) => {
-                eprintln!("failed to open journal: {}", err);
-                exit(1);
-            }
+    let mut cloudwatch = CloudWatch::new(&conf);
+    let runtime_only = true;
+    let local_only = true;
+    match Journal::open(JournalFiles::All, runtime_only, local_only) {
+        Ok(mut journal) => {
+            run_main_loop(&conf, &mut cloudwatch, &mut journal);
         }
-    } else {
-        eprintln!("failed to connect to cloudwatch");
+        Err(err) => {
+            eprintln!("failed to open journal: {}", err);
+            exit(1);
+        }
     }
 }

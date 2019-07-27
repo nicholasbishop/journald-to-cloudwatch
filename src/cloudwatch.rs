@@ -57,15 +57,7 @@ fn get_initial_sequence_token(
     }
 
     if let Some(log_stream) = log_stream {
-        if let Some(token) = log_stream.upload_sequence_token {
-            Some(token)
-        } else {
-            eprintln!(
-                "log stream {}/{} exists but is missing upload_sequence_token",
-                conf.log_group_name, conf.log_stream_name
-            );
-            None
-        }
+        log_stream.upload_sequence_token
     } else {
         eprintln!(
             "log stream {}/{} does not exist",
@@ -77,19 +69,15 @@ fn get_initial_sequence_token(
 
 pub struct CloudWatch {
     client: CloudWatchLogsClient,
-    sequence_token: String,
+    sequence_token: Option<String>,
 }
 
 impl CloudWatch {
-    pub fn new(conf: &Configuration) -> Option<CloudWatch> {
+    pub fn new(conf: &Configuration) -> CloudWatch {
         let client = CloudWatchLogsClient::new(Region::default());
-        if let Some(token) = get_initial_sequence_token(&client, conf) {
-            Some(CloudWatch {
-                client,
-                sequence_token: token,
-            })
-        } else {
-            None
+        CloudWatch {
+            sequence_token: get_initial_sequence_token(&client, conf),
+            client,
         }
     }
 
@@ -103,16 +91,12 @@ impl CloudWatch {
                 }],
                 log_group_name: conf.log_group_name.clone(),
                 log_stream_name: conf.log_stream_name.clone(),
-                sequence_token: Some(self.sequence_token.clone()),
+                sequence_token: self.sequence_token.clone(),
             })
             .sync();
         match result {
             Ok(result) => {
-                if let Some(token) = result.next_sequence_token {
-                    self.sequence_token = token;
-                } else {
-                    eprintln!("missing sequence token");
-                }
+                self.sequence_token = result.next_sequence_token;
             }
             Err(err) => {
                 eprintln!("send_to_cloudwatch failed: {}", err);
