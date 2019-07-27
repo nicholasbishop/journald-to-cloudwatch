@@ -5,7 +5,7 @@ mod ec2;
 use cloudwatch::CloudWatch;
 use configuration::Configuration;
 use std::process::exit;
-use systemd::journal::{Journal, JournalFiles, JournalRecord};
+use systemd::journal::{Journal, JournalFiles, JournalRecord, JournalSeek};
 
 fn upload_record(
     conf: &Configuration,
@@ -52,10 +52,15 @@ fn get_log_stream_name() -> String {
 fn main() {
     let conf = Configuration::new(get_log_stream_name());
     let mut cloudwatch = CloudWatch::new(&conf);
-    let runtime_only = true;
-    let local_only = true;
+    let runtime_only = false;
+    let local_only = false;
     match Journal::open(JournalFiles::All, runtime_only, local_only) {
         Ok(mut journal) => {
+            // Move to the end of the message log
+            if let Err(err) = journal.seek(JournalSeek::Tail) {
+                eprintln!("failed to seek to tail: {}", err);
+            }
+
             run_main_loop(&conf, &mut cloudwatch, &mut journal);
         }
         Err(err) => {
