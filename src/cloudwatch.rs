@@ -133,7 +133,9 @@ impl UploadThreadState {
     }
 
     fn push(&mut self, event: InputLogEvent) {
-        self.cloudwatch.conf.debug("upload thread event received".to_string());
+        self.cloudwatch
+            .conf
+            .debug("upload thread event received".to_string());
 
         // Flush if the latest event's timestamp is older than the
         // previous event
