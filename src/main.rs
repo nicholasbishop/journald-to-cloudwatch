@@ -16,7 +16,8 @@ fn parse_record(record: &JournalRecord) -> Option<InputLogEvent> {
         if let Ok(timestamp) = timestamp.parse::<i64>() {
             Some(InputLogEvent {
                 message: message.to_string(),
-                timestamp,
+                // Convert microseconds to milliseconds
+                timestamp: timestamp / 1000,
             })
         } else {
             None

@@ -1,5 +1,5 @@
 use crate::configuration::Configuration;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use rusoto_core::Region;
 use rusoto_logs::{
     CloudWatchLogs, CloudWatchLogsClient, CreateLogStreamRequest,
@@ -81,6 +81,7 @@ impl CloudWatch {
     }
 
     fn upload(&mut self, events: Vec<InputLogEvent>) {
+        self.conf.debug(format!("uploading {} events", events.len()));
         let result = self
             .client
             .put_log_events(PutLogEventsRequest {
@@ -117,7 +118,6 @@ struct UploadThreadState {
     first_timestamp: Option<i64>,
     last_timestamp: Option<i64>,
     num_pending_bytes: usize,
-    last_flush_time: Option<DateTime<Utc>>,
 }
 
 impl UploadThreadState {
@@ -128,7 +128,6 @@ impl UploadThreadState {
             first_timestamp: None,
             last_timestamp: None,
             num_pending_bytes: 0,
-            last_flush_time: None,
         }
     }
 
@@ -183,14 +182,13 @@ impl UploadThreadState {
         self.first_timestamp = None;
         self.last_timestamp = None;
         self.num_pending_bytes = 0;
-
-        self.last_flush_time = Some(Utc::now());
     }
 
     fn summary(&self) -> String {
-        format!("events.len()={}, last_timestamp={:?}, num_pending_bytes={}, last_flush_time={:?}",
+        format!("events.len()={}, first_timestamp={:?}, last_timestamp={:?}, num_pending_bytes={}",
                 self.events.len(),
-                self.last_timestamp, self.num_pending_bytes, self.last_flush_time)
+                self.first_timestamp,
+                self.last_timestamp, self.num_pending_bytes)
     }
 }
 
