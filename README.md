@@ -4,10 +4,10 @@ This is a simple service that copies logs from journald to AWS
 CloudWatch Logs.
 
 The implementation is very basic. It does not copy logs that were
-created prior to journald-to-cloudwatch starting. It does not batch
-logs. It has only one configuration option, which is the name of the
-log group. The log stream name is derived from the instance name (the
-service assumes it is running on an EC2 instance).
+created prior to journald-to-cloudwatch starting. It has only one
+configuration option, which is the name of the log group. The log
+stream name is derived from the instance name (the service assumes it
+is running on an EC2 instance).
 
 ## Usage
 
