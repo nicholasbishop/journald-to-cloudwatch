@@ -81,7 +81,8 @@ impl CloudWatch {
     }
 
     fn upload(&mut self, events: Vec<InputLogEvent>) {
-        self.conf.debug(format!("uploading {} events", events.len()));
+        self.conf
+            .debug(format!("uploading {} events", events.len()));
         let result = self
             .client
             .put_log_events(PutLogEventsRequest {

@@ -31,7 +31,11 @@ fn get_record_comm(record: &JournalRecord) -> &str {
 fn parse_record(record: &JournalRecord) -> Option<InputLogEvent> {
     if let Some(message) = record.get("MESSAGE") {
         Some(InputLogEvent {
-            message: format!("{}: {}", get_record_comm(record), message.to_string()),
+            message: format!(
+                "{}: {}",
+                get_record_comm(record),
+                message.to_string()
+            ),
             timestamp: get_record_timestamp_millis(record),
         })
     } else {
@@ -39,7 +43,11 @@ fn parse_record(record: &JournalRecord) -> Option<InputLogEvent> {
     }
 }
 
-fn run_main_loop(conf: &Configuration, journal: &mut Journal, tx: mpsc::Sender<InputLogEvent>) {
+fn run_main_loop(
+    conf: &Configuration,
+    journal: &mut Journal,
+    tx: mpsc::Sender<InputLogEvent>,
+) {
     let wait_time = None;
     loop {
         match journal.await_next_record(wait_time) {
