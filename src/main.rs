@@ -20,10 +20,18 @@ fn get_record_timestamp_millis(record: &JournalRecord) -> i64 {
     Utc::now().timestamp_millis()
 }
 
+fn get_record_comm(record: &JournalRecord) -> &str {
+    if let Some(comm) = record.get("_COMM") {
+        comm
+    } else {
+        "unknown"
+    }
+}
+
 fn parse_record(record: &JournalRecord) -> Option<InputLogEvent> {
     if let Some(message) = record.get("MESSAGE") {
         Some(InputLogEvent {
-            message: message.to_string(),
+            message: format!("{}: {}", get_record_comm(record), message.to_string()),
             timestamp: get_record_timestamp_millis(record),
         })
     } else {
