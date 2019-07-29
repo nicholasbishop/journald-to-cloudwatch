@@ -1,5 +1,6 @@
 [Unit]
 Description=Copy logs from journald to CloudWatch
+After=network.target
 
 [Service]
 ExecStart=/usr/bin/journald-to-cloudwatch
