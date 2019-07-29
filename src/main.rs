@@ -2,36 +2,41 @@ mod cloudwatch;
 mod configuration;
 mod ec2;
 
+use chrono::Utc;
 use configuration::Configuration;
 use rusoto_logs::InputLogEvent;
 use std::process::exit;
 use std::sync::mpsc;
 use systemd::journal::{Journal, JournalFiles, JournalRecord, JournalSeek};
 
-fn parse_record(record: &JournalRecord) -> Option<InputLogEvent> {
-    let message = record.get("MESSAGE");
-    let timestamp = record.get("_SOURCE_REALTIME_TIMESTAMP");
-
-    if let (Some(message), Some(timestamp)) = (message, timestamp) {
+fn get_record_timestamp_millis(record: &JournalRecord) -> i64 {
+    if let Some(timestamp) = record.get("_SOURCE_REALTIME_TIMESTAMP") {
         if let Ok(timestamp) = timestamp.parse::<i64>() {
-            Some(InputLogEvent {
-                message: message.to_string(),
-                // Convert microseconds to milliseconds
-                timestamp: timestamp / 1000,
-            })
-        } else {
-            None
+            // Convert microseconds to milliseconds
+            return timestamp / 1000;
         }
+    }
+    // Fall back to current time
+    Utc::now().timestamp_millis()
+}
+
+fn parse_record(record: &JournalRecord) -> Option<InputLogEvent> {
+    if let Some(message) = record.get("MESSAGE") {
+        Some(InputLogEvent {
+            message: message.to_string(),
+            timestamp: get_record_timestamp_millis(record),
+        })
     } else {
         None
     }
 }
 
-fn run_main_loop(journal: &mut Journal, tx: mpsc::Sender<InputLogEvent>) {
+fn run_main_loop(conf: &Configuration, journal: &mut Journal, tx: mpsc::Sender<InputLogEvent>) {
     let wait_time = None;
     loop {
         match journal.await_next_record(wait_time) {
             Ok(Some(record)) => {
+                conf.debug(format!("new record: {:?}", &record));
                 if let Some(event) = parse_record(&record) {
                     if let Err(err) = tx.send(event) {
                         eprintln!("queue send failed: {}", err);
@@ -63,11 +68,12 @@ fn get_log_stream_name() -> String {
 
 fn main() {
     let conf = Configuration::new(get_log_stream_name());
+    let conf2 = conf.clone();
     let runtime_only = false;
     let local_only = false;
     let (tx, rx) = mpsc::channel();
     let uploader =
-        std::thread::spawn(move || cloudwatch::upload_thread(conf, rx));
+        std::thread::spawn(move || cloudwatch::upload_thread(conf2, rx));
     match Journal::open(JournalFiles::All, runtime_only, local_only) {
         Ok(mut journal) => {
             // Move to the end of the message log
@@ -75,7 +81,7 @@ fn main() {
                 eprintln!("failed to seek to tail: {}", err);
             }
 
-            run_main_loop(&mut journal, tx);
+            run_main_loop(&conf, &mut journal, tx);
         }
         Err(err) => {
             eprintln!("failed to open journal: {}", err);
