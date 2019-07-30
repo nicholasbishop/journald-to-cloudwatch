@@ -261,4 +261,38 @@ mod tests {
         state.flush();
         assert_eq!(state.uploader.events.len(), 1);
     }
+
+    #[test]
+    fn test_out_of_order_events() {
+        let uploader = MockUploader::new();
+        let mut state = UploadThreadState::new(uploader, create_conf());
+        state.push(InputLogEvent {
+            message: "myMessage1".to_string(),
+            timestamp: 2,
+        });
+        assert_eq!(state.uploader.events.len(), 0);
+        state.push(InputLogEvent {
+            message: "myMessage2".to_string(),
+            // This message is older than the first message
+            timestamp: 1,
+        });
+        assert_eq!(state.uploader.events.len(), 1);
+    }
+
+    #[test]
+    fn test_simultaneous_events() {
+        let uploader = MockUploader::new();
+        let mut state = UploadThreadState::new(uploader, create_conf());
+        state.push(InputLogEvent {
+            message: "myMessage1".to_string(),
+            timestamp: 1,
+        });
+        assert_eq!(state.uploader.events.len(), 0);
+        state.push(InputLogEvent {
+            message: "myMessage2".to_string(),
+            // This message has the same timestamp as the previous message
+            timestamp: 1,
+        });
+        assert_eq!(state.uploader.events.len(), 0);
+    }
 }
