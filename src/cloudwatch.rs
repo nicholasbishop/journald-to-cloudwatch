@@ -8,6 +8,10 @@ use rusoto_logs::{
 use std::sync::mpsc;
 use std::time::Duration;
 
+trait Uploader {
+    fn upload(&mut self, events: Vec<InputLogEvent>);
+}
+
 struct CloudWatch {
     client: CloudWatchLogsClient,
     sequence_token: Option<String>,
@@ -79,7 +83,9 @@ impl CloudWatch {
             eprintln!("log stream {} does not exist", self.conf.path());
         }
     }
+}
 
+impl Uploader for CloudWatch {
     fn upload(&mut self, events: Vec<InputLogEvent>) {
         self.conf
             .debug(format!("uploading {} events", events.len()));
@@ -113,18 +119,20 @@ fn get_event_num_bytes(event: &InputLogEvent) -> usize {
     event.message.len() + 26
 }
 
-struct UploadThreadState {
-    cloudwatch: CloudWatch,
+struct UploadThreadState<U: Uploader> {
+    conf: Configuration,
+    uploader: U,
     events: Vec<InputLogEvent>,
     first_timestamp: Option<i64>,
     last_timestamp: Option<i64>,
     num_pending_bytes: usize,
 }
 
-impl UploadThreadState {
-    fn new(conf: Configuration) -> UploadThreadState {
+impl<U: Uploader> UploadThreadState<U> {
+    fn new(uploader: U, conf: Configuration) -> UploadThreadState<U> {
         UploadThreadState {
-            cloudwatch: CloudWatch::new(conf),
+            conf,
+            uploader,
             events: Vec::new(),
             first_timestamp: None,
             last_timestamp: None,
@@ -133,8 +141,7 @@ impl UploadThreadState {
     }
 
     fn push(&mut self, event: InputLogEvent) {
-        self.cloudwatch
-            .conf
+        self.conf
             .debug("upload thread event received".to_string());
 
         // Flush if the latest event's timestamp is older than the
@@ -169,8 +176,7 @@ impl UploadThreadState {
 
     /// Upload all pending events to CloudWatch Logs
     fn flush(&mut self) {
-        self.cloudwatch
-            .conf
+        self.conf
             .debug(format!("flush: {}", self.summary()));
 
         if self.events.is_empty() {
@@ -179,7 +185,7 @@ impl UploadThreadState {
 
         let mut events = Vec::new();
         std::mem::swap(&mut events, &mut self.events);
-        self.cloudwatch.upload(events);
+        self.uploader.upload(events);
         self.first_timestamp = None;
         self.last_timestamp = None;
         self.num_pending_bytes = 0;
@@ -195,7 +201,8 @@ impl UploadThreadState {
 
 pub fn upload_thread(conf: Configuration, rx: mpsc::Receiver<InputLogEvent>) {
     conf.debug("upload thread started".to_string());
-    let mut state = UploadThreadState::new(conf.clone());
+    let uploader = CloudWatch::new(conf.clone());
+    let mut state = UploadThreadState::new(uploader, conf.clone());
     loop {
         conf.debug(format!("upload thread state: {}", state.summary()));
 
@@ -209,5 +216,49 @@ pub fn upload_thread(conf: Configuration, rx: mpsc::Receiver<InputLogEvent>) {
                 state.flush();
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_conf() -> Configuration {
+        Configuration {
+            log_group_name: "myGroup".to_string(),
+            log_stream_name: "myStream".to_string(),
+            is_debug_mode_enabled: false,
+        }
+    }
+
+    struct MockUploader {
+        events: Vec<InputLogEvent>,
+    }
+
+    impl MockUploader {
+        fn new() -> MockUploader {
+            MockUploader {
+                events: Vec::new(),
+            }
+        }
+    }
+
+    impl Uploader for MockUploader {
+        fn upload(&mut self, mut events: Vec<InputLogEvent>) {
+            self.events.append(&mut events);
+        }
+    }
+
+    #[test]
+    fn test_manual_flush() {
+        let uploader = MockUploader::new();
+        let mut state = UploadThreadState::new(uploader, create_conf());
+        state.push(InputLogEvent {
+            message: "myMessage".to_string(),
+            timestamp: Utc::now().timestamp_millis(),
+        });
+        assert_eq!(state.uploader.events.len(), 0);
+        state.flush();
+        assert_eq!(state.uploader.events.len(), 1);
     }
 }
