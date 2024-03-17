@@ -1,6 +1,9 @@
+[badges.maintenance]
+status = "deprecated"
+
 [package]
 name = "journald-to-cloudwatch"
-version = "1.2.0"
+version = "1.2.1"
 authors = ["Nicholas Bishop <nicholasbishop@gmail.com>"]
 edition = "2018"
 description = "Service that copies logs from journald to AWS CloudWatch Logs."
